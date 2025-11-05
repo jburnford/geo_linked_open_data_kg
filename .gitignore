@@ -1,0 +1,36 @@
+# Environment variables (contains passwords)
+.env
+
+# Large data files (too big for git)
+cities500.txt
+*.csv
+CA/CA.txt
+
+# Cached Wikidata (regenerable)
+wikidata_canada_*.json
+wikidata_canada_*.json.gz
+
+# Windows/Mac metadata
+*.Zone.Identifier
+*:Zone.Identifier
+*.com.dropbox.attrs
+*:com.dropbox.attrs
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Neo4j data (managed separately)
+neo4j-data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude code session
+.claude/

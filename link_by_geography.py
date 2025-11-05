@@ -140,10 +140,10 @@ class GeographicLinker:
         """
         Calculate confidence score for a geographic match.
 
-        Factors (tuned for HGIS linking experience):
-        - Distance (40% weight) - closer = higher confidence
-        - Name similarity (35% weight) - same/similar name = higher
-        - Entity type compatibility (25% weight) - settlement vs POI priority
+        Factors (tuned for precision-first linking):
+        - Distance (30% weight) - closer = higher confidence
+        - Name similarity (50% weight) - CRITICAL for avoiding false SAME_AS links
+        - Entity type compatibility (20% weight) - settlement vs POI priority
 
         Returns:
             Confidence score 0.0-1.0
@@ -189,9 +189,9 @@ class GeographicLinker:
         if wd_priority >= 70 and gn_priority >= 70:
             type_score = min(type_score * 1.2, 1.0)
 
-        # Weighted combination
-        # Practice for HGIS: balanced weights for learning
-        confidence = (distance_score * 0.40) + (name_score * 0.35) + (type_score * 0.25)
+        # Weighted combination - NAME is now 50% to prevent false SAME_AS links
+        # Perfect coords + no name match → max 0.70 (NEAR only, not SAME_AS)
+        confidence = (distance_score * 0.30) + (name_score * 0.50) + (type_score * 0.20)
 
         return min(confidence, 1.0)
 
@@ -235,12 +235,24 @@ class GeographicLinker:
                 )
 
                 if confidence >= min_confidence:
+                    # Determine relationship type based on entity hierarchy
+                    wd_priority = self.get_entity_priority(wd_place, is_wikidata=True)
+                    gn_priority = self.get_entity_priority(gn_place, is_wikidata=False)
+
+                    # LOCATED_IN: POI/building contained in settlement/admin division
+                    if (wd_priority < 60 and gn_priority >= 60 and
+                        gn_place['distance_km'] <= 5.0):
+                        rel_type = 'LOCATED_IN'
+                    else:
+                        rel_type = 'NEAR'  # Default spatial proximity
+
                     links_batch.append({
                         'wikidataId': wd_place['wikidataId'],
                         'geonameId': gn_place['geonameId'],
                         'distance_km': round(gn_place['distance_km'], 3),
                         'confidence': round(confidence, 3),
-                        'matchMethod': 'geographic_proximity'
+                        'matchMethod': 'geographic_proximity',
+                        'relType': rel_type
                     })
 
             # Commit batch
@@ -258,18 +270,37 @@ class GeographicLinker:
         print(f"  Average: {links_created / len(wikidata_places):.2f} links per Wikidata place")
 
     def _create_links_batch(self, links: List[Dict]):
-        """Create a batch of NEAR relationships."""
+        """Create a batch of geographic relationships (NEAR or LOCATED_IN)."""
         with self.driver.session() as session:
-            session.run("""
-                UNWIND $links AS link
-                MATCH (wd:Place {wikidataId: link.wikidataId})
-                MATCH (gn:Place {geonameId: link.geonameId})
-                MERGE (wd)-[r:NEAR]->(gn)
-                SET r.distance_km = link.distance_km,
-                    r.confidence = link.confidence,
-                    r.matchMethod = link.matchMethod,
-                    r.linkedDate = datetime()
-            """, links=links)
+            # Separate links by type
+            near_links = [l for l in links if l['relType'] == 'NEAR']
+            located_in_links = [l for l in links if l['relType'] == 'LOCATED_IN']
+
+            # Create NEAR relationships
+            if near_links:
+                session.run("""
+                    UNWIND $links AS link
+                    MATCH (wd:Place {wikidataId: link.wikidataId})
+                    MATCH (gn:Place {geonameId: link.geonameId})
+                    MERGE (wd)-[r:NEAR]->(gn)
+                    SET r.distance_km = link.distance_km,
+                        r.confidence = link.confidence,
+                        r.matchMethod = link.matchMethod,
+                        r.linkedDate = datetime()
+                """, links=near_links)
+
+            # Create LOCATED_IN relationships
+            if located_in_links:
+                session.run("""
+                    UNWIND $links AS link
+                    MATCH (wd:Place {wikidataId: link.wikidataId})
+                    MATCH (gn:Place {geonameId: link.geonameId})
+                    MERGE (wd)-[r:LOCATED_IN]->(gn)
+                    SET r.distance_km = link.distance_km,
+                        r.confidence = link.confidence,
+                        r.matchMethod = link.matchMethod,
+                        r.linkedDate = datetime()
+                """, links=located_in_links)
 
     def create_high_confidence_same_as_links(self, confidence_threshold: float = 0.85):
         """
@@ -313,20 +344,28 @@ class GeographicLinker:
             """)
             wikidata_only = result.single()['count']
 
-            # Places with NEAR links
+            # Places with any geographic links
             result = session.run("""
-                MATCH (wd:Place {geonameId: NULL})-[:NEAR]->(gn:Place)
+                MATCH (wd:Place {geonameId: NULL})
                 WHERE wd.wikidataId IS NOT NULL
+                  AND (EXISTS((wd)-[:NEAR]->()) OR EXISTS((wd)-[:LOCATED_IN]->()))
                 RETURN count(DISTINCT wd) AS count
             """)
             linked = result.single()['count']
 
-            # Total NEAR relationships
+            # NEAR relationships
             result = session.run("""
                 MATCH ()-[r:NEAR]->()
                 RETURN count(r) AS count
             """)
-            total_links = result.single()['count']
+            near_count = result.single()['count']
+
+            # LOCATED_IN relationships
+            result = session.run("""
+                MATCH ()-[r:LOCATED_IN]->()
+                RETURN count(r) AS count
+            """)
+            located_in_count = result.single()['count']
 
             # SAME_AS relationships
             result = session.run("""
@@ -350,8 +389,10 @@ class GeographicLinker:
             print(f"  Unlinked: {wikidata_only - linked:,}")
 
             print(f"\nRelationships:")
-            print(f"  NEAR links: {total_links:,}")
-            print(f"  SAME_AS links: {same_as:,}")
+            print(f"  NEAR links (spatial proximity): {near_count:,}")
+            print(f"  LOCATED_IN links (containment): {located_in_count:,}")
+            print(f"  SAME_AS links (identity): {same_as:,}")
+            print(f"  Total: {near_count + located_in_count + same_as:,}")
 
             if avg_conf:
                 print(f"\nAverage NEAR link:")

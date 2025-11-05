@@ -9,6 +9,7 @@ CA/CA.txt
 # Cached Wikidata (regenerable)
 wikidata_canada_*.json
 wikidata_canada_*.json.gz
+wikidata_p131_relationships.json
 
 # Windows/Mac metadata
 *.Zone.Identifier

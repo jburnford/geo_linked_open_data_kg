@@ -60,7 +60,34 @@ Properties:
 
 ### Relationships
 
-#### Place Relationships
+#### Geographic and Administrative Relationships
+
+**Precision-First Philosophy**: We maintain high precision by using three distinct relationship types:
+
+1. **`SAME_AS`** - Identity (same entity in different databases)
+   - Confidence >= 0.85
+   - Distance < 1km
+   - Name match required (50% weight in scoring)
+   - Example: Wikidata "Toronto" → GeoNames "Toronto"
+
+2. **`NEAR`** - Spatial proximity (nearby but distinct entities)
+   - Confidence >= 0.5
+   - Within 10km radius
+   - May have different names
+   - Example: "Port Maitland" NEAR "Maitland" (3km apart)
+
+3. **`LOCATED_IN`** - Geographic containment (inferred from coordinates)
+   - POI/building entity contained in settlement/admin division
+   - Distance < 5km
+   - Entity hierarchy: building (priority 10) < settlement (70) < admin (85)
+   - Example: "St. Mary's Church" LOCATED_IN "Montreal"
+
+4. **`ADMINISTRATIVELY_LOCATED_IN`** - Wikidata P131 relationships
+   - Direct from Wikidata (located in administrative territory)
+   - Official administrative boundaries
+   - Example: "High Park" ADMINISTRATIVELY_LOCATED_IN "Toronto"
+
+#### Core Relationships
 - `(Place)-[:LOCATED_IN_COUNTRY]->(Country)`
 - `(Place)-[:LOCATED_IN_ADMIN1]->(AdminDivision {level: 1})`
 - `(Place)-[:LOCATED_IN_ADMIN2]->(AdminDivision {level: 2})`

@@ -1,19 +1,27 @@
-# GeoNames LOD Knowledge Graph for NER Reconciliation
+# Global LOD Knowledge Graph for NER Reconciliation
 
 ## Overview
 Linked Open Data knowledge graph combining GeoNames and Wikidata for reconciling Named Entity Recognition results in historical research pipelines.
 
+**Current Scale:** 556,626 places (Canada comprehensive + global cities)
+**Target Scale:** 12M+ places (global coverage)
+**Status:** ✅ Spatial indexes optimized, 🚀 Ready for global expansion
+
 ## Data Sources
 
-### GeoNames
-- **cities500.txt**: 225,112 global cities with population > 500
-- **CA.txt**: 315,928 Canadian geographic features (all types)
+### GeoNames (✅ Loaded)
+- **cities500.txt**: 225,112 global cities with population > 500 ✅
+- **CA.txt**: 315,928 Canadian geographic features (all types) ✅
+- **allCountries.txt**: 12.3M global features (⏳ In Progress - see Phase 1)
 - **License**: Creative Commons Attribution 4.0
 
-### Wikidata (Planned)
-- Entity linking for populated places meeting threshold
+### Wikidata (27,163 Canadian places ✅, Global expansion planned)
+- Entity linking with P131 administrative relationships
 - Additional metadata: Wikipedia links, alternative names, historical data
 - Q-numbers for LOD integration
+- **Phase 2 Target**: ~247K strategically selected global places
+
+**After deduplication:** 556,626 unique Place nodes currently loaded
 
 ## Neo4j Data Model
 
@@ -166,33 +174,48 @@ RETURN p
 
 ## Implementation Phases
 
-### Phase 1: GeoNames Loading (Current)
-1. Load cities500.txt (global coverage)
-2. Load CA.txt (comprehensive Canadian data)
-3. Create Place nodes with all properties
-4. Create Country and AdminDivision nodes
-5. Establish geographic relationships
-6. Build text search indexes
+### Phase 1: GeoNames Global Expansion (⏳ In Progress)
+**Status:** Infrastructure ready, loading global data country-by-country
 
-### Phase 2: Wikidata Integration
-1. Query Wikidata SPARQL for places above threshold
-2. Match GeoNames IDs to Wikidata Q-numbers
-3. Enrich Place nodes with Wikidata properties
-4. Add Wikipedia URLs and additional alternate names
-5. Create WIKIDATA_LINK relationships
+1. ✅ Load cities500.txt (225K global cities)
+2. ✅ Load CA.txt (316K Canadian features)
+3. ✅ Create spatial indexes (102ms query performance)
+4. ✅ Add point geometry to all places
+5. ⏳ Load allCountries.txt by tiers:
+   - **Tier 1:** US, GB, AU, NZ (~3.3M new records)
+   - **Tier 2:** FR, DE, IT, ES, NL, IE (~2.2M)
+   - **Tier 3:** IN, CN, PK, HK, SG (~2M)
+   - **Tier 4:** All remaining (~4M)
 
-### Phase 3: NER Reconciliation API
-1. Build reconciliation query functions
-2. Implement ranking/scoring system
-3. Add confidence metrics
-4. Create disambiguation logic
-5. Test with historical NER results
+**Timeline:** 2-4 weeks
+**See:** `EXPANSION_STRATEGY.md` for detailed plan
 
-### Phase 4: Optimization
-1. Spatial indexing for geographic queries
-2. Full-text search optimization
-3. Caching frequent queries
-4. Performance tuning
+### Phase 2: Selective Wikidata Integration (Planned)
+**Target:** Add rich metadata to ~247K strategically important places
+
+1. ✅ Canadian places loaded (27K with P131 relationships)
+2. 🔜 Global administrative divisions (all countries)
+3. 🔜 Canadian institutions comprehensive (residential schools, universities, hospitals)
+4. 🔜 Infrastructure (major railways, ports, historical sites)
+
+**Timeline:** 4-6 weeks after Phase 1
+**See:** `EXPANSION_STRATEGY.md` Phase 2 details
+
+### Phase 3: Historical Post Office Data (Planned)
+1. Load 26K+ Canadian post offices
+2. Temporal property handling (open/close dates)
+3. Link to existing Place nodes
+4. Test NER disambiguation cases
+
+**Timeline:** 2 weeks
+
+### Phase 4: RAG Integration (Planned)
+1. Vector embeddings for place descriptions
+2. Connect to GPT-OSS-120B (already downloaded on Nibi cluster)
+3. Natural language → Cypher query translation
+4. Graph-enhanced LLM responses
+
+**Timeline:** 8 weeks
 
 ## Technology Stack
 
@@ -208,21 +231,32 @@ RETURN p
 
 ```
 /home/jic823/CanadaNeo4j/
-├── README.md                   # This file
-├── requirements.txt            # Python dependencies
-├── load_geonames.py           # GeoNames ETL script
-├── enrich_wikidata.py         # Wikidata integration
-├── reconcile.py               # NER reconciliation queries
-├── schema/
-│   └── constraints.cypher     # Neo4j schema setup
+├── README.md                        # Quick start guide (this file)
+├── DATABASE_INFO.md                 # Database schema and statistics
+├── EXPANSION_STRATEGY.md            # Detailed expansion plan and timelines
+├── requirements.txt                 # Python dependencies
+├── .env                            # Neo4j credentials (not in git)
+│
+├── load_geonames.py                # Original GeoNames loader (CA + cities500)
+├── load_global_geonames.py         # Global loader with country filtering ✨
+├── add_spatial_indexes.py          # Spatial index setup ✨
+├── link_by_geography.py            # Geographic relationship builder
+├── load_wikidata_from_cache.py     # Wikidata loader
+├── fetch_wikidata_p131_relationships.py  # P131 admin relationships
+│
 ├── data/
-│   ├── cities500.txt          # Global cities (225K)
-│   └── CA/
-│       └── CA.txt             # Canadian data (316K)
-└── queries/
-    ├── reconciliation.cypher  # Sample queries
-    └── statistics.cypher      # Data analysis
+│   ├── cities500.txt               # Global cities (225K) ✅
+│   ├── allCountries.txt            # Global features (12.3M) ⏳
+│   ├── CA/
+│   │   └── CA.txt                  # Canadian data (316K) ✅
+│   ├── wikidata_canada_*.json      # Cached Wikidata entities
+│   └── wikidata_p131_relationships.json  # Cached P131 data
+│
+├── geographic_linking.log          # Latest geographic linking run
+└── spatial_index_setup.log         # Spatial index creation log
 ```
+
+✨ = New scripts for global expansion
 
 ## Neo4j Configuration
 
@@ -281,11 +315,60 @@ results = reconcile_place(
 - Cross-references to other LOD sources
 - Community-maintained accuracy
 
-## Next Steps
+## Quick Start
 
-1. Set up Neo4j instance
-2. Create schema and constraints
-3. Load GeoNames data
-4. Test reconciliation queries
-5. Integrate Wikidata
-6. Connect to NER pipeline
+### Prerequisites
+- Neo4j running on `bolt://localhost:7687`
+- Python 3.x with dependencies: `pip install -r requirements.txt`
+- `.env` file with Neo4j credentials
+
+### Current Status Verification
+```bash
+# Check database statistics
+python3 -c "from neo4j import GraphDatabase; driver = GraphDatabase.driver('bolt://localhost:7687', auth=('neo4j', 'your-password')); print(driver.session().run('MATCH (p:Place) RETURN count(p)').single())"
+```
+
+### Global Expansion - Next Steps
+
+**Step 1: Download correct allCountries.txt**
+```bash
+cd /home/jic823/CanadaNeo4j
+
+# Rename wrong file (postal codes)
+mv allCountries.txt allCountries_postalcodes_WRONG.txt
+
+# Download correct GeoNames dump (~1.5GB compressed)
+wget https://download.geonames.org/export/dump/allCountries.zip
+unzip allCountries.zip
+
+# Verify format (should show "19 fields")
+head -1 allCountries.txt | awk -F'\t' '{print NF " fields"}'
+```
+
+**Step 2: Test with US data (dry-run)**
+```bash
+python3 load_global_geonames.py --countries US --dry-run
+```
+
+**Step 3: Load Tier 1 countries**
+```bash
+python3 load_global_geonames.py --countries US,GB,AU,NZ
+```
+
+**Step 4: Verify and continue**
+- Check query performance
+- Review statistics
+- Proceed to Tier 2 countries
+
+## Documentation
+
+- **README.md** (this file): Quick start and overview
+- **DATABASE_INFO.md**: Schema, statistics, relationship types, query examples
+- **EXPANSION_STRATEGY.md**: Detailed expansion plan, timelines, priorities
+- **spatial_index_setup.log**: Spatial optimization results
+- **geographic_linking.log**: Relationship creation results
+
+## Support
+
+For detailed expansion strategy, see `EXPANSION_STRATEGY.md`
+For database schema and queries, see `DATABASE_INFO.md`

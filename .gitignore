@@ -1,37 +1,54 @@
-# Environment variables (contains passwords)
-.env
-
-# Large data files (too big for git)
+# Large data files
+allCountries.txt
+allCountries.zip
+allCountries_postalcodes_WRONG.txt
+CA
 cities500.txt
-*.csv
-CA/CA.txt
+*.zip
 
-# Cached Wikidata (regenerable)
-wikidata_canada_*.json
-wikidata_canada_*.json.gz
-wikidata_p131_relationships.json
+# Wikidata cache files
+wikidata_*.json
+wikidata_*.json.gz
+wikidata_global_cache/
 
-# Windows/Mac metadata
-*.Zone.Identifier
-*:Zone.Identifier
-*.com.dropbox.attrs
-*:com.dropbox.attrs
+# GeoNames data
+*.txt
+!requirements.txt
+
+# Log files
+*.log
 
 # Python cache
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
+*.so
 
-# Neo4j data (managed separately)
-neo4j-data/
+# Virtual environments
+venv/
+env/
+ENV/
 
-# IDE
+# Neo4j data
+.neo4j/
+
+# CSV data files (keep small ones)
+*.csv
+!post-office-data-with-founding-date).csv
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Claude code session
-.claude/
+# Zone identifiers (Windows WSL)
+*:Zone.Identifier

@@ -70,8 +70,44 @@ class WikidataCacheLoader:
                 'wikidataPopulation': place.get('population'),
                 'inceptionDate': place.get('inceptionDate'),
                 'dissolvedDate': place.get('dissolvedDate'),
+                'abolishedDate': place.get('abolishedDate'),
                 'wikidataLatitude': place.get('latitude'),
-                'wikidataLongitude': place.get('longitude')
+                'wikidataLongitude': place.get('longitude'),
+
+                # NEW: Alternate names for NER matching
+                'alternateNames': place.get('alternateNames', []),
+                'officialNames': place.get('officialNames', []),
+                'nativeLabel': place.get('nativeLabel'),
+                'nickname': place.get('nickname'),
+
+                # NEW: Historical succession
+                'replacesQid': place.get('replacesQid'),
+                'replacedByQid': place.get('replacedByQid'),
+                'followsQid': place.get('followsQid'),
+                'followedByQid': place.get('followedByQid'),
+
+                # NEW: Colonial context
+                'foundedByQid': place.get('foundedByQid'),
+                'foundedByLabel': place.get('foundedByLabel'),
+                'ownedByQid': place.get('ownedByQid'),
+                'ownedByLabel': place.get('ownedByLabel'),
+                'capitalOfQid': place.get('capitalOfQid'),
+                'capitalOfLabel': place.get('capitalOfLabel'),
+
+                # NEW: Cross-database IDs
+                'gndId': place.get('gndId'),
+                'viafId': place.get('viafId'),
+                'locId': place.get('locId'),
+                'tgnId': place.get('tgnId'),
+                'osmId': place.get('osmId'),
+                'wofId': place.get('wofId'),
+
+                # NEW: Historic context
+                'historicCountyQid': place.get('historicCountyQid'),
+                'historicCountyLabel': place.get('historicCountyLabel'),
+                'officialWebsite': place.get('officialWebsite'),
+                'instanceOfQid': place.get('instanceOfQid'),
+                'instanceOfLabel': place.get('instanceOfLabel'),
             }
 
             batch.append(enrichment_data)
@@ -97,8 +133,45 @@ class WikidataCacheLoader:
                     p.wikidataPopulation = item.wikidataPopulation,
                     p.inceptionDate = item.inceptionDate,
                     p.dissolvedDate = item.dissolvedDate,
+                    p.abolishedDate = item.abolishedDate,
                     p.wikidataLatitude = item.wikidataLatitude,
-                    p.wikidataLongitude = item.wikidataLongitude
+                    p.wikidataLongitude = item.wikidataLongitude,
+
+                    // Alternate names for NER matching
+                    p.alternateNames = item.alternateNames,
+                    p.officialNames = item.officialNames,
+                    p.nativeLabel = item.nativeLabel,
+                    p.nickname = item.nickname,
+
+                    // Historical succession
+                    p.replacesQid = item.replacesQid,
+                    p.replacedByQid = item.replacedByQid,
+                    p.followsQid = item.followsQid,
+                    p.followedByQid = item.followedByQid,
+
+                    // Colonial context
+                    p.foundedByQid = item.foundedByQid,
+                    p.foundedByLabel = item.foundedByLabel,
+                    p.ownedByQid = item.ownedByQid,
+                    p.ownedByLabel = item.ownedByLabel,
+                    p.capitalOfQid = item.capitalOfQid,
+                    p.capitalOfLabel = item.capitalOfLabel,
+
+                    // Cross-database IDs
+                    p.gndId = item.gndId,
+                    p.viafId = item.viafId,
+                    p.locId = item.locId,
+                    p.tgnId = item.tgnId,
+                    p.osmId = item.osmId,
+                    p.wofId = item.wofId,
+
+                    // Historic context
+                    p.historicCountyQid = item.historicCountyQid,
+                    p.historicCountyLabel = item.historicCountyLabel,
+                    p.officialWebsite = item.officialWebsite,
+                    p.instanceOfQid = item.instanceOfQid,
+                    p.instanceOfLabel = item.instanceOfLabel
+
                 RETURN count(p) AS updated
             """, batch=batch)
 
@@ -128,12 +201,48 @@ class WikidataCacheLoader:
                 'name': place['name'],
                 'latitude': place['latitude'],
                 'longitude': place['longitude'],
-                'countryCode': 'CA',
+                'countryCode': place.get('countryQid', 'CA'),  # Use actual country if available
                 'wikipediaUrl': place.get('wikipediaUrl'),
                 'wikidataPopulation': place.get('population'),
                 'inceptionDate': place.get('inceptionDate'),
                 'dissolvedDate': place.get('dissolvedDate'),
-                'source': 'wikidata'
+                'abolishedDate': place.get('abolishedDate'),
+                'source': 'wikidata',
+
+                # Alternate names
+                'alternateNames': place.get('alternateNames', []),
+                'officialNames': place.get('officialNames', []),
+                'nativeLabel': place.get('nativeLabel'),
+                'nickname': place.get('nickname'),
+
+                # Historical succession
+                'replacesQid': place.get('replacesQid'),
+                'replacedByQid': place.get('replacedByQid'),
+                'followsQid': place.get('followsQid'),
+                'followedByQid': place.get('followedByQid'),
+
+                # Colonial context
+                'foundedByQid': place.get('foundedByQid'),
+                'foundedByLabel': place.get('foundedByLabel'),
+                'ownedByQid': place.get('ownedByQid'),
+                'ownedByLabel': place.get('ownedByLabel'),
+                'capitalOfQid': place.get('capitalOfQid'),
+                'capitalOfLabel': place.get('capitalOfLabel'),
+
+                # Cross-database IDs
+                'gndId': place.get('gndId'),
+                'viafId': place.get('viafId'),
+                'locId': place.get('locId'),
+                'tgnId': place.get('tgnId'),
+                'osmId': place.get('osmId'),
+                'wofId': place.get('wofId'),
+
+                # Historic context
+                'historicCountyQid': place.get('historicCountyQid'),
+                'historicCountyLabel': place.get('historicCountyLabel'),
+                'officialWebsite': place.get('officialWebsite'),
+                'instanceOfQid': place.get('instanceOfQid'),
+                'instanceOfLabel': place.get('instanceOfLabel'),
             }
 
             batch.append(place_data)
@@ -165,9 +274,45 @@ class WikidataCacheLoader:
                 SET p.wikipediaUrl = item.wikipediaUrl,
                     p.wikidataPopulation = item.wikidataPopulation,
                     p.inceptionDate = item.inceptionDate,
-                    p.dissolvedDate = item.dissolvedDate
+                    p.dissolvedDate = item.dissolvedDate,
+                    p.abolishedDate = item.abolishedDate,
 
-                MERGE (c:Country {code: 'CA'})
+                    // Alternate names
+                    p.alternateNames = item.alternateNames,
+                    p.officialNames = item.officialNames,
+                    p.nativeLabel = item.nativeLabel,
+                    p.nickname = item.nickname,
+
+                    // Historical succession
+                    p.replacesQid = item.replacesQid,
+                    p.replacedByQid = item.replacedByQid,
+                    p.followsQid = item.followsQid,
+                    p.followedByQid = item.followedByQid,
+
+                    // Colonial context
+                    p.foundedByQid = item.foundedByQid,
+                    p.foundedByLabel = item.foundedByLabel,
+                    p.ownedByQid = item.ownedByQid,
+                    p.ownedByLabel = item.ownedByLabel,
+                    p.capitalOfQid = item.capitalOfQid,
+                    p.capitalOfLabel = item.capitalOfLabel,
+
+                    // Cross-database IDs
+                    p.gndId = item.gndId,
+                    p.viafId = item.viafId,
+                    p.locId = item.locId,
+                    p.tgnId = item.tgnId,
+                    p.osmId = item.osmId,
+                    p.wofId = item.wofId,
+
+                    // Historic context
+                    p.historicCountyQid = item.historicCountyQid,
+                    p.historicCountyLabel = item.historicCountyLabel,
+                    p.officialWebsite = item.officialWebsite,
+                    p.instanceOfQid = item.instanceOfQid,
+                    p.instanceOfLabel = item.instanceOfLabel
+
+                MERGE (c:Country {code: item.countryCode})
                 MERGE (p)-[:LOCATED_IN_COUNTRY]->(c)
 
                 RETURN count(p) AS created

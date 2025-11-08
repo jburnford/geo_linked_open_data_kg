@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=wikidata_download
 #SBATCH --account=def-jic823
-#SBATCH --time=6:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mem=4G
 #SBATCH --cpus-per-task=1
 #SBATCH --output=%x-%j.out

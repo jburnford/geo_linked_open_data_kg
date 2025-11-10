@@ -56,8 +56,9 @@ echo ""
 echo "=== Step 2: Current Database State ==="
 bin/cypher-shell -u neo4j -p historicalkg2025 << 'CYPHER'
 MATCH (wp:WikidataPlace)
-WITH count(wp) as total,
-     count((wp)-[:SAME_AS]->()) as linked_same_as
+WITH count(wp) as total
+OPTIONAL MATCH (linked:WikidataPlace)-[:SAME_AS]->()
+WITH total, count(DISTINCT linked) as linked_same_as
 RETURN total, linked_same_as, total - linked_same_as as unlinked;
 CYPHER
 
@@ -89,12 +90,16 @@ echo ""
 echo "WikidataPlace linking coverage:"
 bin/cypher-shell -u neo4j -p historicalkg2025 << 'CYPHER'
 MATCH (wp:WikidataPlace)
-RETURN
-    count(wp) as total,
-    count((wp)-[:SAME_AS]->()) as same_as,
-    count((wp)-[:NEAR]->()) as near,
-    count((wp)-[:LOCATED_IN]->()) as located_in,
-    count(wp) - count((wp)--()) as unlinked;
+WITH count(wp) as total
+OPTIONAL MATCH (same:WikidataPlace)-[:SAME_AS]->()
+WITH total, count(DISTINCT same) as same_as
+OPTIONAL MATCH (near:WikidataPlace)-[:NEAR]->()
+WITH total, same_as, count(DISTINCT near) as near
+OPTIONAL MATCH (located:WikidataPlace)-[:LOCATED_IN]->()
+WITH total, same_as, near, count(DISTINCT located) as located_in
+OPTIONAL MATCH (linked:WikidataPlace)--()
+WITH total, same_as, near, located_in, count(DISTINCT linked) as linked
+RETURN total, same_as, near, located_in, total - linked as unlinked;
 CYPHER
 
 echo ""

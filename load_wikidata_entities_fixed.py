@@ -19,6 +19,13 @@ class WikidataLoader:
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.batch_size = 1000
 
+        # Track coordinate issues
+        self.coord_stats = {
+            'skipped_invalid': 0,
+            'fixed_swapped': 0,
+            'skipped_missing': 0
+        }
+
     def close(self):
         self.driver.close()
 
@@ -227,10 +234,52 @@ class WikidataLoader:
             pbar.close()
 
         print(f"✓ Loaded {count:,} geographic entities")
+
+        # Report coordinate issues
+        if any(self.coord_stats.values()):
+            print(f"  Coordinate validation:")
+            if self.coord_stats['fixed_swapped'] > 0:
+                print(f"    Fixed swapped lat/lon: {self.coord_stats['fixed_swapped']:,}")
+            if self.coord_stats['skipped_invalid'] > 0:
+                print(f"    Skipped invalid: {self.coord_stats['skipped_invalid']:,}")
+            if self.coord_stats['skipped_missing'] > 0:
+                print(f"    Skipped missing: {self.coord_stats['skipped_missing']:,}")
+
         return count
 
     def _load_geo_batch(self, batch):
-        """Load a batch of geographic entities."""
+        """Load a batch of geographic entities with coordinate validation."""
+        # Validate and fix coordinates before loading
+        valid_batch = []
+
+        for geo in batch:
+            lat = geo.get('latitude')
+            lon = geo.get('longitude')
+
+            # Skip if coordinates are missing
+            if lat is None or lon is None:
+                self.coord_stats['skipped_missing'] += 1
+                continue
+
+            # Check if coordinates are in valid range
+            if -90 <= lat <= 90 and -180 <= lon <= 180:
+                # Valid coordinates
+                valid_batch.append(geo)
+            elif -90 <= lon <= 90 and -180 <= lat <= 180:
+                # Coordinates appear swapped - fix them
+                geo['latitude'] = lon
+                geo['longitude'] = lat
+                valid_batch.append(geo)
+                self.coord_stats['fixed_swapped'] += 1
+            else:
+                # Invalid coordinates that can't be fixed
+                self.coord_stats['skipped_invalid'] += 1
+                continue
+
+        # Load valid batch
+        if not valid_batch:
+            return 0
+
         with self.driver.session() as session:
             result = session.run("""
                 UNWIND $batch AS geo
@@ -251,7 +300,7 @@ class WikidataLoader:
                     g.wikipediaUrl = geo.wikipediaUrl,
                     g.alternateNames = geo.alternateNames
                 RETURN count(g) as count
-            """, batch=batch)
+            """, batch=valid_batch)
             return result.single()['count']
 
     def create_indexes(self):

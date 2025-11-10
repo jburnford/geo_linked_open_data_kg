@@ -80,7 +80,7 @@ export FILTERED_DIR="$FILTERED_DIR"
 
 echo ""
 echo "Starting Wikidata load (estimated: 2-4 hours)..."
-python3 load_wikidata_entities.py
+python3 load_wikidata_entities_fixed.py
 
 if [ $? -eq 0 ]; then
     echo "✓ Wikidata loading complete"

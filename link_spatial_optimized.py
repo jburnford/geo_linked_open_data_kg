@@ -263,7 +263,7 @@ class OptimizedSpatialLinker:
         return len(links_batch), len(places)
 
     def get_countries_with_unlinked_counts(self):
-        """Get countries ordered by unlinked place count."""
+        """Get countries ordered by unlinked place count (smallest first for faster initial results)."""
         with self.driver.session() as session:
             result = session.run("""
                 MATCH (wp:WikidataPlace)
@@ -273,7 +273,7 @@ class OptimizedSpatialLinker:
                   AND NOT EXISTS((wp)-[:SAME_AS]->())
                 WITH wp.countryQid AS country, count(*) AS count
                 RETURN country, count
-                ORDER BY count DESC
+                ORDER BY count ASC
             """)
             return [(r['country'], r['count']) for r in result]
 

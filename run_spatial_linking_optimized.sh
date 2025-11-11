@@ -53,7 +53,20 @@ if [ -z "$CONNECTION_SUCCESS" ]; then
 fi
 
 echo ""
-echo "=== Step 2: Current Database State ==="
+echo "=== Step 2: Create Indexes ==="
+echo "Creating indexes on WikidataPlace properties..."
+cd "$CODE_DIR"
+python3 add_wikidata_indexes.py
+
+if [ $? -ne 0 ]; then
+    echo "✗ Index creation failed"
+    kill $NEO4J_PID 2>/dev/null
+    exit 1
+fi
+
+echo ""
+echo "=== Step 3: Current Database State ==="
+cd "$NEO4J_HOME"
 bin/cypher-shell -u neo4j -p historicalkg2025 << 'CYPHER'
 MATCH (wp:WikidataPlace)
 WITH count(wp) as total
@@ -63,7 +76,7 @@ RETURN total, linked_same_as, total - linked_same_as as unlinked;
 CYPHER
 
 echo ""
-echo "=== Step 3: Run Optimized Spatial Linking ==="
+echo "=== Step 4: Run Optimized Spatial Linking ==="
 echo "This processes 1000 places at a time per country"
 echo "Target: <0.1 sec/place → ~320 hours for 11.5M places"
 echo "Job will run for up to 24 hours, then can be resumed"
@@ -83,7 +96,7 @@ else
 fi
 
 echo ""
-echo "=== Step 4: Progress Statistics ==="
+echo "=== Step 5: Progress Statistics ==="
 cd "$NEO4J_HOME"
 
 echo ""

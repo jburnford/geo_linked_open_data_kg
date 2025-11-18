@@ -6,6 +6,7 @@ Reads newline-delimited JSON from filter_wikidata_*.py output.
 
 import json
 import gzip
+import os
 from neo4j import GraphDatabase
 from tqdm import tqdm
 import sys
@@ -13,7 +14,12 @@ from typing import Dict, Any
 
 
 class WikidataLoader:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="historicalkg2025"):
+    def __init__(self, uri=None, user=None, password=None):
+        # Use environment variables if not provided
+        uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        user = user or os.getenv('NEO4J_USER', 'neo4j')
+        password = password or os.getenv('NEO4J_PASSWORD', 'historicalkg2025')
+
         print(f"Connecting to {uri}...")
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.batch_size = 1000
@@ -29,42 +35,49 @@ class WikidataLoader:
         batch = []
 
         with gzip.open(filepath, 'rt', encoding='utf-8') as f:
-            # Count lines for progress bar
+            # Count lines for progress bar (skip metadata line)
             print("  Counting entities...")
-            total = sum(1 for _ in f)
+            total = sum(1 for _ in f) - 1  # Skip metadata line
             f.seek(0)
 
             pbar = tqdm(total=total, desc="People", unit="entities")
 
+            # Skip first line (metadata)
+            next(f)
+
             for line in f:
                 entity = json.loads(line)
 
+                # Skip if no ID
+                if not entity.get('wikidataId'):
+                    continue
+
                 person_data = {
-                    'qid': entity['id'],
-                    'name': entity.get('label', 'Unknown'),
+                    'qid': entity['wikidataId'],
+                    'name': entity.get('name', 'Unknown'),
                     'description': entity.get('description'),
 
                     # Birth
-                    'birthPlaceQid': entity.get('birth_place'),
-                    'birthDate': entity.get('birth_date'),
+                    'birthPlaceQid': entity.get('birthPlaceQid'),
+                    'birthDate': entity.get('dateOfBirth'),
 
                     # Death
-                    'deathPlaceQid': entity.get('death_place'),
-                    'deathDate': entity.get('death_date'),
+                    'deathPlaceQid': entity.get('deathPlaceQid'),
+                    'deathDate': entity.get('dateOfDeath'),
 
                     # Other places
-                    'residencePlaceQids': entity.get('residence', []),
-                    'workPlaceQids': entity.get('work_location', []),
-                    'citizenshipQids': entity.get('citizenship', []),
+                    'residencePlaceQids': entity.get('residenceQids', []),
+                    'workPlaceQids': entity.get('workLocationQids', []),
+                    'citizenshipQid': entity.get('citizenshipQid'),
 
                     # Attributes
-                    'occupation': entity.get('occupation'),
-                    'gender': entity.get('gender'),
+                    'occupationQids': entity.get('occupationQids', []),
+                    'positionQids': entity.get('positionQids', []),
 
                     # External IDs
-                    'viafId': entity.get('viaf'),
-                    'gndId': entity.get('gnd'),
-                    'locId': entity.get('loc'),
+                    'viafId': entity.get('viafId'),
+                    'gndId': entity.get('gndId'),
+                    'locId': entity.get('locId'),
                 }
 
                 batch.append(person_data)
@@ -97,9 +110,9 @@ class WikidataLoader:
                     p.deathDate = person.deathDate,
                     p.residencePlaceQids = person.residencePlaceQids,
                     p.workPlaceQids = person.workPlaceQids,
-                    p.citizenshipQids = person.citizenshipQids,
-                    p.occupation = person.occupation,
-                    p.gender = person.gender,
+                    p.citizenshipQid = person.citizenshipQid,
+                    p.occupationQids = person.occupationQids,
+                    p.positionQids = person.positionQids,
                     p.viafId = person.viafId,
                     p.gndId = person.gndId,
                     p.locId = person.locId
@@ -116,16 +129,27 @@ class WikidataLoader:
 
         with gzip.open(filepath, 'rt', encoding='utf-8') as f:
             print("  Counting entities...")
-            total = sum(1 for _ in f)
-            f.seek(0)
+            # Check if first line is metadata
+            first_line = f.readline()
+            if b'metadata' in first_line:
+                total = sum(1 for _ in f)
+                # Don't seek back, we'll skip metadata
+            else:
+                f.seek(0)
+                total = sum(1 for _ in f) + 1
+                f.seek(0)
 
             pbar = tqdm(total=total, desc="Organizations", unit="entities")
 
             for line in f:
                 entity = json.loads(line)
 
+                # Skip metadata line
+                if 'metadata' in entity:
+                    continue
+
                 org_data = {
-                    'qid': entity['id'],
+                    'qid': entity.get('qid') or entity.get('id'),
                     'name': entity.get('label', 'Unknown'),
                     'description': entity.get('description'),
 
@@ -193,16 +217,19 @@ class WikidataLoader:
 
         with gzip.open(filepath, 'rt', encoding='utf-8') as f:
             print("  Counting entities...")
-            total = sum(1 for _ in f)
+            total = sum(1 for _ in f) - 1  # Skip metadata line
             f.seek(0)
 
             pbar = tqdm(total=total, desc="Geographic entities", unit="entities")
+
+            # Skip first line (metadata)
+            next(f)
 
             for line in f:
                 entity = json.loads(line)
 
                 geo_data = {
-                    'qid': entity['id'],
+                    'qid': entity.get('qid') or entity.get('id'),
                     'name': entity.get('label', 'Unknown'),
                     'description': entity.get('description'),
 
@@ -254,9 +281,10 @@ class WikidataLoader:
                     g.admin2Qid = geo.admin2Qid,
                     g.instanceOf = geo.instanceOf,
                     g.geonamesId = geo.geonamesId,
-                    g.osmId = geo.osmId
-                WHERE geo.latitude IS NOT NULL AND geo.longitude IS NOT NULL
-                SET g.location = point({latitude: geo.latitude, longitude: geo.longitude})
+                    g.osmId = geo.osmId,
+                    g.location = CASE WHEN geo.latitude IS NOT NULL AND geo.longitude IS NOT NULL
+                                      THEN point({latitude: geo.latitude, longitude: geo.longitude})
+                                      ELSE null END
                 RETURN count(g) as count
             """, batch=batch)
             return result.single()['count']

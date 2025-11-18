@@ -109,16 +109,18 @@ class AdminHierarchyBuilder:
             return created
 
     def link_places_to_admin1_for_country(self, country_code: str):
-        """Link places to Admin1 divisions for one country."""
+        """Link places to Admin1 divisions for one country.
+
+        For mega-countries (>200K places), processes by admin1 region to avoid timeouts.
+        """
 
         with self.driver.session() as session:
-            # Count places needing links
+            # Count places
             result = session.run("""
                 MATCH (p:Place)
                 WHERE p.countryCode = $country
                   AND p.admin1Code IS NOT NULL
                   AND p.featureClass <> 'A'
-                  AND NOT EXISTS((p)-[:LOCATED_IN_ADMIN1]->())
                 RETURN count(p) AS total
             """, country=country_code)
 
@@ -127,7 +129,11 @@ class AdminHierarchyBuilder:
             if total == 0:
                 return 0
 
-            # Process in batches
+            # For mega-countries (>200K places), process by admin1 region
+            if total > 200000:
+                return self._link_mega_country_by_admin1(country_code)
+
+            # Normal processing for smaller countries
             linked = 0
             for skip in range(0, total, self.batch_size):
                 result = session.run("""
@@ -135,15 +141,10 @@ class AdminHierarchyBuilder:
                     WHERE p.countryCode = $country
                       AND p.admin1Code IS NOT NULL
                       AND p.featureClass <> 'A'
-                      AND NOT EXISTS((p)-[:LOCATED_IN_ADMIN1]->())
                     WITH p
                     SKIP $skip LIMIT $limit
 
-                    MATCH (a:AdminDivision)
-                    WHERE a.featureCode = 'ADM1'
-                      AND a.countryCode = p.countryCode
-                      AND a.admin1Code = p.admin1Code
-
+                    MATCH (a:AdminDivision {featureCode: 'ADM1', countryCode: p.countryCode, admin1Code: p.admin1Code})
                     MERGE (p)-[:LOCATED_IN_ADMIN1]->(a)
                     RETURN count(*) AS batch_linked
                 """, country=country_code, skip=skip, limit=self.batch_size)
@@ -152,6 +153,58 @@ class AdminHierarchyBuilder:
                 linked += batch_linked
 
             return linked
+
+    def _link_mega_country_by_admin1(self, country_code: str):
+        """Process mega-countries by admin1 region (state/province) to avoid timeouts."""
+
+        with self.driver.session() as session:
+            # Get list of admin1 codes in this country
+            result = session.run("""
+                MATCH (p:Place)
+                WHERE p.countryCode = $country
+                  AND p.admin1Code IS NOT NULL
+                RETURN DISTINCT p.admin1Code AS admin1
+            """, country=country_code)
+
+            admin1_codes = [rec['admin1'] for rec in result]
+
+            total_linked = 0
+
+            # Process each admin1 region separately (smaller chunks)
+            for admin1_code in admin1_codes:
+                # Count places in this admin1 region
+                result = session.run("""
+                    MATCH (p:Place)
+                    WHERE p.countryCode = $country
+                      AND p.admin1Code = $admin1
+                      AND p.featureClass <> 'A'
+                    RETURN count(p) AS total
+                """, country=country_code, admin1=admin1_code)
+
+                region_total = result.single()['total']
+
+                if region_total == 0:
+                    continue
+
+                # Process this admin1 region in batches
+                for skip in range(0, region_total, self.batch_size):
+                    result = session.run("""
+                        MATCH (p:Place)
+                        WHERE p.countryCode = $country
+                          AND p.admin1Code = $admin1
+                          AND p.featureClass <> 'A'
+                        WITH p
+                        SKIP $skip LIMIT $limit
+
+                        MATCH (a:AdminDivision {featureCode: 'ADM1', countryCode: p.countryCode, admin1Code: p.admin1Code})
+                        MERGE (p)-[:LOCATED_IN_ADMIN1]->(a)
+                        RETURN count(*) AS batch_linked
+                    """, country=country_code, admin1=admin1_code, skip=skip, limit=self.batch_size)
+
+                    batch_linked = result.single()['batch_linked']
+                    total_linked += batch_linked
+
+            return total_linked
 
     def link_admin_divisions_hierarchically(self):
         """Link admin divisions to parent divisions - done globally since fewer nodes."""
@@ -250,10 +303,15 @@ class AdminHierarchyBuilder:
         print("="*60)
 
     def build_all(self):
-        """Execute complete hierarchy building - country by country."""
+        """Execute complete hierarchy building - country by country.
+
+        Automatically handles mega-countries (>200K places) by processing them
+        region-by-region (admin1 subdivisions) instead of all at once.
+        """
         print("="*60)
         print("BUILDING ADMINISTRATIVE HIERARCHIES (Memory-Safe)")
         print("="*60)
+        print("Mega-countries (>200K places) will be processed by region")
 
         # Step 1: Create indexes
         self.create_indexes()
@@ -261,7 +319,7 @@ class AdminHierarchyBuilder:
         # Step 2: Get country list
         countries = self.get_country_list()
 
-        # Step 3: Process each country
+        # Step 3: Process each country (mega-countries auto-handled)
         print(f"\nProcessing {len(countries)} countries...")
         total_admin_created = 0
         total_links_created = 0

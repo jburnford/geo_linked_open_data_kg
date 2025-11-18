@@ -17,10 +17,15 @@ from neo4j import GraphDatabase
 from tqdm import tqdm
 import time
 import math
+import os
 
 
 class OptimizedSpatialLinker:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="historicalkg2025"):
+    def __init__(self, uri=None, user=None, password=None):
+        # Use environment variables if not provided
+        uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        user = user or os.getenv('NEO4J_USER', 'neo4j')
+        password = password or os.getenv('NEO4J_PASSWORD')
         print(f"Connecting to {uri}...")
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
 

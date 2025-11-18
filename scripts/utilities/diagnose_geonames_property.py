@@ -9,9 +9,14 @@ Possible issues:
 """
 
 from neo4j import GraphDatabase
+import os
 
 
-def diagnose(uri="bolt://localhost:7687", user="neo4j", password="historicalkg2025"):
+def diagnose(uri=None, user=None, password=None):
+    # Use environment variables if not provided
+    uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+    user = user or os.getenv('NEO4J_USER', 'neo4j')
+    password = password or os.getenv('NEO4J_PASSWORD')
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
     try:

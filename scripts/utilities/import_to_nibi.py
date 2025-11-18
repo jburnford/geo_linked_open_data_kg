@@ -6,12 +6,17 @@ Loads places, admin divisions, and countries from JSON export.
 
 import json
 import gzip
+import os
 from neo4j import GraphDatabase
 from tqdm import tqdm
 import sys
 
 class Neo4jImporter:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="historicalkg2025"):
+    def __init__(self, uri=None, user=None, password=None):
+        # Use environment variables if not provided
+        uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        user = user or os.getenv('NEO4J_USER', 'neo4j')
+        password = password or os.getenv('NEO4J_PASSWORD', 'CHANGE_ME')  # Example password only
         print(f"Connecting to {uri}...")
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.batch_size = 10000
@@ -197,19 +202,25 @@ class Neo4jImporter:
             """, batch=batch)
 
     def create_country_relationships(self):
-        """Create Place -> Country relationships."""
+        """Create Place -> Country relationships in batches."""
         print("\nCreating Place -> Country relationships...")
 
         with self.driver.session() as session:
+            # Use CALL {} IN TRANSACTIONS for batched relationship creation
             result = session.run("""
-                MATCH (p:Place), (c:Country)
-                WHERE p.countryCode = c.code
-                  AND NOT EXISTS((p)-[:LOCATED_IN_COUNTRY]->())
-                CREATE (p)-[:LOCATED_IN_COUNTRY]->(c)
-                RETURN count(*) as count
+                CALL {
+                    MATCH (p:Place)
+                    WHERE NOT EXISTS((p)-[:LOCATED_IN_COUNTRY]->())
+                    WITH p LIMIT 50000
+                    MATCH (c:Country)
+                    WHERE p.countryCode = c.code
+                    CREATE (p)-[:LOCATED_IN_COUNTRY]->(c)
+                    RETURN count(*) as batch_count
+                } IN TRANSACTIONS OF 50000 ROWS
+                RETURN sum(batch_count) as total_count
             """)
 
-            count = result.single()["count"]
+            count = result.single()["total_count"]
             print(f"✓ Created {count:,} LOCATED_IN_COUNTRY relationships")
 
     def verify_import(self):

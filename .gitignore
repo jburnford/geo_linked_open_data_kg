@@ -52,3 +52,23 @@ ENV/
 
 # Zone identifiers (Windows WSL)
 *:Zone.Identifier
+
+# Sensitive credentials and configuration
+.env
+.env.*
+CREDENTIALS.txt
+credentials.txt
+**/CREDENTIALS.md
+**/*credentials*
+secrets.json
+config.local.json
+
+# Export files (may contain sensitive data)
+neo4j_export/
+exports/
+*.dump
+
+# LINCS data files (large)
+LINCsDATA/
+lincs_historical_canadians.json
+*.ttl

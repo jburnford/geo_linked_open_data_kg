@@ -7,9 +7,14 @@ This creates a complete dump of the database as Cypher statements.
 from neo4j import GraphDatabase
 import sys
 import gzip
+import os
 
 class Neo4jExporter:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="york2005"):
+    def __init__(self, uri=None, user=None, password=None):
+        # Use environment variables if not provided
+        uri = uri or os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+        user = user or os.getenv('NEO4J_USER', 'neo4j')
+        password = password or os.getenv('NEO4J_PASSWORD')
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def close(self):

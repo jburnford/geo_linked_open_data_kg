@@ -9,12 +9,14 @@ This file documents the credentials needed for the CanadaNeo4j project. **DO NOT
 Create a `.env` file in the project root with the following variables:
 
 ```bash
-# Neo4j Connection
+# Neo4j Connection - Arbutus Cloud VM
 NEO4J_URI=bolt://206.12.90.118:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=<your-password-here>
+NEO4J_PASSWORD=<get-password-from-CREDENTIALS.txt-or-project-maintainer>
 NEO4J_DATABASE=canadaneo4j
 ```
+
+**Note**: The project uses the Arbutus Cloud VM database by default. If you're working from a different computer, ask the project maintainer for the password or check the `CREDENTIALS.txt` file (not in git).
 
 ### 2. Arbutus Cloud VM Access
 

@@ -1,0 +1,248 @@
+{
+  "total_migrations": 5196,
+  "unique_birth_locations": 1250,
+  "unique_death_locations": 1019,
+  "cross_border_flows": 118,
+  "top_flows": [
+    {
+      "from": "United Kingdom",
+      "to": "Canada",
+      "count": 971,
+      "sample_people": [
+        "John Ernest Bradshaw",
+        "John James Cochrane",
+        "Allan McDonell",
+        "Joseph Henry Watson",
+        "Thomas Kennedy Ramsay"
+      ]
+    },
+    {
+      "from": "United States",
+      "to": "Canada",
+      "count": 360,
+      "sample_people": [
+        "Sir William Cornelius Van Horne",
+        "Frances Mathilde Barnard",
+        "Asa Belknap Foster",
+        "Thos. G. (Thomas George) Shaughnessy",
+        "Frederick Dibblee"
+      ]
+    },
+    {
+      "from": "France",
+      "to": "Canada",
+      "count": 346,
+      "sample_people": [
+        "Pierre R\u00e9vol",
+        "\u00c9tienne Montgolfier",
+        "Martine Messier",
+        "Jean de Saint-P\u00e8re",
+        "Jean de Saint-P\u00e8re"
+      ]
+    },
+    {
+      "from": "Ireland",
+      "to": "Canada",
+      "count": 177,
+      "sample_people": [
+        "John Baird",
+        "Robert Reid Smiley",
+        "Peter John Leech",
+        "Peter John Leech",
+        "George Marcus Cary"
+      ]
+    },
+    {
+      "from": "Canada",
+      "to": "United States",
+      "count": 131,
+      "sample_people": [
+        "John Richardson",
+        "Lawrence Doyle",
+        "Sir John Strathearn Hendrie",
+        "Sir John Strathearn Hendrie",
+        "Joseph du Sacr\u00e9-Coeur"
+      ]
+    },
+    {
+      "from": "Canada",
+      "to": "France",
+      "count": 62,
+      "sample_people": [
+        "Marie-E\u0301lisabeth Rocbert de la Morandi\u00e8re",
+        "Jacques Baudry de Lamarche",
+        "Louis Joseph Forget",
+        "Louis Joseph Forget",
+        "Edson Loy Pease"
+      ]
+    },
+    {
+      "from": "United Kingdom",
+      "to": "United States",
+      "count": 48,
+      "sample_people": [
+        "John Johnston British fur trader",
+        "Thomas McCormick",
+        "John Larkin",
+        "John Larkin",
+        "Frederick Brown"
+      ]
+    },
+    {
+      "from": "Canada",
+      "to": "United Kingdom",
+      "count": 29,
+      "sample_people": [
+        "Sir Robert John Pinsent",
+        "Clarence Campbell Chipman",
+        "Th\u00e9odose-Matthieu Denys de Vitr\u00e9",
+        "Hugh McKay Sutherland",
+        "Hugh McKay Sutherland"
+      ]
+    },
+    {
+      "from": "Germany",
+      "to": "Canada",
+      "count": 27,
+      "sample_people": [
+        "Josias Wurtele",
+        "Josias Wurtele",
+        "Camilla Scheuer",
+        "Simon Leiser",
+        "Henry Nicholas Christopher Loedel"
+      ]
+    },
+    {
+      "from": "Ireland",
+      "to": "United Kingdom",
+      "count": 12,
+      "sample_people": [
+        "Sir Robert John Le Mesurier McClure",
+        "George Joseph Maunsell",
+        "George Joseph Maunsell",
+        "Francis Blake Crofton",
+        "Francis Blake Crofton"
+      ]
+    },
+    {
+      "from": "Ireland",
+      "to": "United States",
+      "count": 11,
+      "sample_people": [
+        "John Talbot",
+        "Richard Rowland Thompson",
+        "Richard Rowland Thompson",
+        "John Baptist McMahon",
+        "Martin Switzer"
+      ]
+    },
+    {
+      "from": "Italy",
+      "to": "Canada",
+      "count": 10,
+      "sample_people": [
+        "Thomas Delvecchio",
+        "Filumena Costanzo",
+        "Filumena Costanzo",
+        "Marie-Germain-E\u0301mile Eynard",
+        "Michele Rigali"
+      ]
+    },
+    {
+      "from": "Switzerland",
+      "to": "Canada",
+      "count": 9,
+      "sample_people": [
+        "Louis Babel",
+        "Louis Babel",
+        "Jeanne-Charlotte Allamand",
+        "Napol\u00e9on Aubin",
+        "Henriette Feller"
+      ]
+    },
+    {
+      "from": "Belgium",
+      "to": "Canada",
+      "count": 8,
+      "sample_people": [
+        "Guillaume Mechtler",
+        "Jacques-Joseph Cheval",
+        "A. (Alfred) Fyen",
+        "F. (Frantz) Jehin-Prume",
+        "F. (Frantz) Jehin-Prume"
+      ]
+    },
+    {
+      "from": "United States",
+      "to": "United Kingdom",
+      "count": 8,
+      "sample_people": [
+        "Arent Schuyler De Peyster",
+        "Arent Schuyler De Peyster",
+        "Sir David William Smith",
+        "Thaddeus Osgood",
+        "Thaddeus Osgood"
+      ]
+    },
+    {
+      "from": "PL",
+      "to": "Canada",
+      "count": 8,
+      "sample_people": [
+        "Besha Starkman",
+        "Liveright Piuze",
+        "Liveright Piuze",
+        "Sigismund Mohr",
+        "Sigismund Mohr"
+      ]
+    },
+    {
+      "from": "JE",
+      "to": "Canada",
+      "count": 7,
+      "sample_people": [
+        "Francis Canning",
+        "the Reverend Jonathan Shortt",
+        "David Le Boutillier",
+        "John Payzant",
+        "Francis Le Maistre"
+      ]
+    },
+    {
+      "from": "Netherlands",
+      "to": "Canada",
+      "count": 7,
+      "sample_people": [
+        "Samuel Johannes Holland",
+        "Samuel Johannes Holland",
+        "Louis Marchand",
+        "Bruin Romkes Comingo",
+        "Bruin Romkes Comingo"
+      ]
+    },
+    {
+      "from": "India",
+      "to": "Canada",
+      "count": 7,
+      "sample_people": [
+        "James Laurence Cotter",
+        "Anna Harriette Edwards",
+        "Anna Harriette Edwards",
+        "James Anderson",
+        "Alexander Caulfield Anderson"
+      ]
+    },
+    {
+      "from": "United Kingdom",
+      "to": "France",
+      "count": 6,
+      "sample_people": [
+        "Hugh Cairns",
+        "Hugh Cairns",
+        "Thomas Douglas",
+        "Thomas Skinner",
+        "Ashton Oxenden"
+      ]
+    }
+  ]
+}

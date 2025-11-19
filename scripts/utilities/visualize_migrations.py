@@ -169,60 +169,115 @@ fig.add_trace(go.Scattergeo(
     hovertemplate='<b>Death:</b> %{text}<extra></extra>'
 ))
 
-# Add migration flow lines (filtered to significant flows)
-significant_flows = [(k, v) for k, v in city_flows.items() if v["count"] >= 2]
-print(f"\nAdding {len(significant_flows)} significant migration flows (2+ people)...")
+# Function to add flow lines for a given threshold
+def add_flow_lines(threshold):
+    """Add migration flow lines for flows with count >= threshold"""
+    significant_flows = [(k, v) for k, v in city_flows.items() if v["count"] >= threshold]
+    traces = []
 
-for (birth_key, death_key), data in significant_flows:
-    birth_name, birth_lat, birth_lon, birth_country = birth_key
-    death_name, death_lat, death_lon, death_country = death_key
+    for (birth_key, death_key), data in significant_flows:
+        birth_name, birth_lat, birth_lon, birth_country = birth_key
+        death_name, death_lat, death_lon, death_country = death_key
 
-    # Skip if same location
-    if birth_lat == death_lat and birth_lon == death_lon:
-        continue
+        # Skip if same location
+        if birth_lat == death_lat and birth_lon == death_lon:
+            continue
 
-    count = data["count"]
-    people_list = "<br>".join([f"  • {p}" for p in data["people"][:10]])
-    if len(data["people"]) > 10:
-        people_list += f"<br>  ... and {len(data['people']) - 10} more"
+        count = data["count"]
+        people_list = "<br>".join([f"  • {p}" for p in data["people"][:10]])
+        if len(data["people"]) > 10:
+            people_list += f"<br>  ... and {len(data['people']) - 10} more"
 
-    birth_country_name = country_names.get(birth_country, birth_country)
-    death_country_name = country_names.get(death_country, death_country)
+        birth_country_name = country_names.get(birth_country, birth_country)
+        death_country_name = country_names.get(death_country, death_country)
 
-    hover_text = (f"<b>{birth_name}, {birth_country_name}</b><br>"
-                  f"→ <b>{death_name}, {death_country_name}</b><br>"
-                  f"{count} people:<br>{people_list}")
+        hover_text = (f"<b>{birth_name}, {birth_country_name}</b><br>"
+                      f"→ <b>{death_name}, {death_country_name}</b><br>"
+                      f"{count} people:<br>{people_list}")
 
-    # Color based on destination region
-    if death_country == 'CA':
-        color = 'blue'
-    elif death_country in ['CN', 'IN', 'JP', 'LK', 'PK', 'SG', 'HK', 'TW', 'MY', 'TH']:
-        color = 'orange'
-    elif death_country in ['GB', 'FR', 'DE', 'IT', 'IE', 'NL', 'BE', 'CH', 'ES', 'PT']:
-        color = 'purple'
-    elif death_country == 'US':
-        color = 'red'
-    else:
-        color = 'gray'
+        # Color based on destination region
+        if death_country == 'CA':
+            color = 'blue'
+        elif death_country in ['CN', 'IN', 'JP', 'LK', 'PK', 'SG', 'HK', 'TW', 'MY', 'TH']:
+            color = 'orange'
+        elif death_country in ['GB', 'FR', 'DE', 'IT', 'IE', 'NL', 'BE', 'CH', 'ES', 'PT']:
+            color = 'purple'
+        elif death_country == 'US':
+            color = 'red'
+        else:
+            color = 'gray'
 
-    # Line width based on count
-    width = min(count * 0.5 + 0.5, 5)
+        # Line width based on count
+        width = min(count * 0.5 + 0.5, 5)
 
-    fig.add_trace(go.Scattergeo(
-        lon=[birth_lon, death_lon],
-        lat=[birth_lat, death_lat],
-        mode='lines',
-        line=dict(width=width, color=color),
-        opacity=0.4,
-        showlegend=False,
-        hovertemplate=hover_text + '<extra></extra>'
+        traces.append(go.Scattergeo(
+            lon=[birth_lon, death_lon],
+            lat=[birth_lat, death_lat],
+            mode='lines',
+            line=dict(width=width, color=color),
+            opacity=0.4,
+            showlegend=False,
+            hovertemplate=hover_text + '<extra></extra>'
+        ))
+
+    return traces, len(significant_flows)
+
+# Create frames for different threshold values
+thresholds = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 40, 50]
+frames = []
+
+print(f"\nGenerating interactive frames for thresholds: {thresholds}")
+
+for threshold in thresholds:
+    flow_traces, flow_count = add_flow_lines(threshold)
+    print(f"  Threshold {threshold:2d}: {flow_count:4d} flows")
+
+    # Create frame data (markers + flows for this threshold)
+    frame_data = [
+        fig.data[0],  # Birth markers
+        fig.data[1],  # Death markers
+    ] + flow_traces
+
+    frames.append(go.Frame(
+        data=frame_data,
+        name=str(threshold),
+        layout=go.Layout(
+            title_text=f'Historical Migration Patterns: Birth → Death Locations<br>'
+                      f'<sub>Showing flows with {threshold}+ people ({flow_count} routes)</sub>'
+        )
     ))
 
-# Update layout
+# Add initial flow lines (threshold=2)
+initial_traces, initial_count = add_flow_lines(2)
+print(f"\nAdding initial view: {initial_count} flows (threshold=2)")
+
+for trace in initial_traces:
+    fig.add_trace(trace)
+
+# Add frames to figure
+fig.frames = frames
+
+# Create slider steps
+slider_steps = []
+for threshold in thresholds:
+    slider_steps.append({
+        'args': [
+            [str(threshold)],
+            {
+                'frame': {'duration': 300, 'redraw': True},
+                'mode': 'immediate',
+                'transition': {'duration': 300}
+            }
+        ],
+        'label': str(threshold),
+        'method': 'animate'
+    })
+
+# Update layout with slider
 fig.update_layout(
     title={
-        'text': 'Historical Migration Patterns: Birth → Death Locations<br>'
-                '<sub>Green = births, Red = deaths, Lines = migration flows (2+ people)</sub>',
+        'text': f'Historical Migration Patterns: Birth → Death Locations<br>'
+                f'<sub>Showing flows with 2+ people ({initial_count} routes) - Use slider to adjust threshold</sub>',
         'x': 0.5,
         'xanchor': 'center'
     },
@@ -237,8 +292,24 @@ fig.update_layout(
         showcountries=True,
         countrycolor='rgb(204, 204, 204)',
     ),
-    height=800,
+    height=850,
     width=1400,
+    sliders=[{
+        'active': 1,  # Start at threshold=2 (index 1 in thresholds list)
+        'yanchor': 'top',
+        'y': 0,
+        'xanchor': 'left',
+        'x': 0.1,
+        'currentvalue': {
+            'prefix': 'Minimum people per route: ',
+            'visible': True,
+            'xanchor': 'right'
+        },
+        'pad': {'b': 10, 't': 50},
+        'len': 0.8,
+        'transition': {'duration': 300},
+        'steps': slider_steps
+    }]
 )
 
 # Save to HTML

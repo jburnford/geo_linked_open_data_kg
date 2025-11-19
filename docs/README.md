@@ -33,6 +33,13 @@ An interactive map showing birth-to-death migration patterns from the Geographic
 - St. John's, NL: 127 people
 - Victoria, BC: 121 people
 
+## Interactive Features
+
+**Threshold Slider**: Use the slider at the bottom of the map to filter migration flows by the minimum number of people per route (1-50). This lets you:
+- View **all individual migrations** (threshold = 1): 3,137 routes
+- See **major migration patterns** (threshold = 10+): 40 routes
+- Explore **dominant flows** (threshold = 50): 7 routes
+
 ## Map Legend
 
 - **Green markers**: Birth places (size indicates number of births)

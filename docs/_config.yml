@@ -1,0 +1,26 @@
+# GitHub Pages Configuration
+title: "Historical Migration Patterns"
+description: "Interactive visualization of 19th-century migration patterns from the Geographic Linked Open Data Knowledge Graph"
+theme: jekyll-theme-minimal
+
+# Project metadata
+author: "J. Burnford"
+repository: "jburnford/geo_linked_open_data_kg"
+
+# Navigation
+navigation:
+  - title: "Interactive Map"
+    url: "index.html"
+  - title: "GitHub Repository"
+    url: "https://github.com/jburnford/geo_linked_open_data_kg"
+
+# Show project info in sidebar
+github:
+  repository_url: "https://github.com/jburnford/geo_linked_open_data_kg"
+
+# SEO metadata
+lang: en-US
+keywords: "migration patterns, historical data, knowledge graph, geonames, wikidata, canada history, genealogy"
+
+# Google Analytics (optional - add your tracking ID if desired)
+# google_analytics: UA-XXXXXXXXX-X
